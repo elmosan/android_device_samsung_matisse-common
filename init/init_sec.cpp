@@ -27,6 +27,13 @@ std::string bootloader;
 std::string device;
 char* devicename;
 
+static const GRFont* gr_font = NULL;
+
+static const GRFont* get_font()
+{
+    return gr_font;
+}
+
 device_variant check_device_and_get_variant()
 {
     bootloader = property_get("ro.bootloader");
@@ -100,13 +107,13 @@ void healthd_board_mode_charger_draw_battery(
     static int char_height = -1, char_width = -1;
 
     if (char_height == -1 && char_width == -1)
-        gr_font_size(&char_width, &char_height);
+        gr_font_size(get_font(), &char_width, &char_height);
     snprintf(cap_str, (STR_LEN - 1), "%d%%", batt_prop->batteryLevel);
-    str_len_px = gr_measure(cap_str);
+    str_len_px = gr_measure(get_font(), cap_str);
     x = (gr_fb_width() - str_len_px) / 2;
     y = (gr_fb_height() + char_height) / 2;
     gr_color(0xa4, 0xc6, 0x39, 255);
-    gr_text(x, y, cap_str, 0);
+    gr_text(get_font(), x, y, cap_str, 0);
 }
 
 int healthd_board_battery_update(__attribute__((unused)) struct android::BatteryProperties *props)
@@ -147,5 +154,12 @@ void healthd_board_mode_charger_set_backlight(bool on)
 
 void healthd_board_mode_charger_init()
 {
-
+    GRFont* tmp_font;
+    int res = gr_init_font("font_log", &tmp_font);
+    if (res == 0) {
+        gr_font = tmp_font;
+    } else {
+        LOGW("Couldn't open font, falling back to default!\n");
+        gr_font = gr_sys_font();
+    }
 }
